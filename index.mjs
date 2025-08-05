@@ -29,8 +29,12 @@ function createTransformStream(flushFn, entryPoints) {
 			if (!file.isBuffer()) {
 				return cb(createError(new TypeError('File should be a buffer')))
 			}
-
-			entryPoints.push(file)
+			const fileIndex = entryPoints.findIndex((cfile) => cfile.path === file.path);
+			if (fileIndex >= 0) {
+				entryPoints[fileIndex] = file
+			} else {
+				entryPoints.push(file)
+			}
 			cb(null)
 		},
 		flush: flushFn,
@@ -110,10 +114,10 @@ function simpleBuild() {
 
 function incrementalBuild() {
 	let ctx
+	/** @type Array<import('vinyl').BufferFile> */
+	const entryPoints = []
 
 	return function plugin(pluginOptions = {}) {
-		/** @type Array<import('vinyl').BufferFile> */
-		const entryPoints = []
 		const {metafileName, esbuildOptions} = splitOptions(pluginOptions)
 
 		async function flushFunction(cb) {
